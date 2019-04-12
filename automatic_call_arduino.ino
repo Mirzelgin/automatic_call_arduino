@@ -107,7 +107,7 @@ void loop() {
 
 
   //Мастер настройки расписания
-  while (level_menu = 1) {
+  while (level_menu == 1) {
     btn_state_read();
 
     //Приступаем к настройке
