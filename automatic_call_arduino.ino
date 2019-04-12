@@ -20,7 +20,10 @@ using namespace tools;
 #define bNoOrExit     3
 
 #define is_pressed LOW //Значение при которм кнопка считается нажатой
-byte btn_state[4];
+#define btn_count 4
+byte btn_pin[btn_count] = { A0, A1, A2, A3 };
+byte btn_prev[btn_count];
+byte btn_state[btn_count];
 
 #define relay A4
 byte relay_state = LOW;
@@ -358,12 +361,12 @@ void loop() {
 }
 
 void btn_state_read() {
-  btn_state[0] = digitalRead(b1);
-  btn_state[1] = digitalRead(b2);
-  btn_state[2] = digitalRead(b3);
-  btn_state[3] = digitalRead(b4);
+  for(byte i = 0; i < btn_count; i++) {
+    btn_prev[i] = btn_state[i];
+    btn_state[i] = digitalRead(btn_pin[i]);
+  }
 
-
+#ifdef defined(debug)
   Serial.print(btn_chk_state(0));
   Serial.print(" ");
   Serial.print(btn_chk_state(1));
@@ -372,24 +375,14 @@ void btn_state_read() {
   Serial.print(" ");
   Serial.print(btn_chk_state(3));
   Serial.print("\n");
-
+#endif
 
 }
 
 
 bool btn_chk_state(byte btn) {
-  if (btn_state[btn] == is_pressed) {
+  if ((btn_state[btn] && !btn_prev[btn]) && btn_state[btn] == is_pressed) {
     return true;
   }
   else return false;
 }
-
-/*
-  void wait_for_button() {
-  while (true) {
-    btn_state_read();
-    for (byte i = 0; i < 4; i++)
-      if (btn_state[i] == is_pressed) break;
-  }
-  }
-*/
