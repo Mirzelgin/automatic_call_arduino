@@ -81,27 +81,11 @@ void setup() {
 DateTime prev;
 int span = 100;
 void loop() {
-#if defined(debug)
-  Serial.print(level_menu);
-  Serial.print(" ");
-  Serial.print(level_submenu_1);
-  Serial.print(" ");
-  Serial.print(level_submenu_2);
-  Serial.print(" | ");
-#endif
   btn_state_read();
 
   //return;
 
-  while (level_menu = 0) {
-#if defined(debug)
-    Serial.print(level_menu);
-    Serial.print(" ");
-    Serial.print(level_submenu_1);
-    Serial.print(" ");
-    Serial.print(level_submenu_2);
-    Serial.print(" | ");
-#endif
+  while (level_menu == 0) {
     btn_state_read();
 
     if (rtc.now().second() != prev.second()) {
@@ -120,31 +104,15 @@ void loop() {
       level_menu = 2;
     }
   }
-  
+
 
   //Мастер настройки расписания
   while (level_menu = 1) {
-#if defined(debug)
-    Serial.print(level_menu);
-    Serial.print(" ");
-    Serial.print(level_submenu_1);
-    Serial.print(" ");
-    Serial.print(level_submenu_2);
-    Serial.print(" | ");
-#endif
     btn_state_read();
 
     //Приступаем к настройке
     //Выбор типа расписания
     while (level_submenu_1 == 20) {
-#if defined(debug)
-      Serial.print(level_menu);
-      Serial.print(" ");
-      Serial.print(level_submenu_1);
-      Serial.print(" ");
-      Serial.print(level_submenu_2);
-      Serial.print(" | ");
-#endif
       btn_state_read();
 
       if (rtc.now().second() != prev.second()) {
@@ -169,18 +137,11 @@ void loop() {
         level_submenu_1 = 30;
       }
     }
-    
+
 
     //Выбираем количество занятий в расписании
     while (level_submenu_1 == 30) {
-#if defined(debug)
-      Serial.print(level_menu);
-      Serial.print(" ");
-      Serial.print(level_submenu_1);
-      Serial.print(" ");
-      Serial.print(level_submenu_2);
-      Serial.print(" | ");
-#endif
+
       btn_state_read();
 
       if (rtc.now().second() != prev.second()) {
@@ -212,38 +173,23 @@ void loop() {
         level_submenu_1 = 0;
       }
     }
-    
 
     //Настройка занятий
     while (level_submenu_1 >= 0 && level_submenu_1 < s[select_schedule].count) {
-#if defined(debug)
-      Serial.print(level_menu);
-      Serial.print(" ");
-      Serial.print(level_submenu_1);
-      Serial.print(" ");
-      Serial.print(level_submenu_2);
-      Serial.print(" | ");
-#endif
       btn_state_read();
 
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print("Lesson #" + level_submenu_1 + 1);
+      lcd.print("Lesson #");
+      lcd.print(level_submenu_1 + 1);
 
       //Настраиваем время начала и конца выбранного занятия
       while (level_submenu_2 == 0) {
-#if defined(debug)
-        Serial.print(level_menu);
-        Serial.print(" ");
-        Serial.print(level_submenu_1);
-        Serial.print(" ");
-        Serial.print(level_submenu_2);
-        Serial.print(" | ");
-#endif
         btn_state_read();
 
         lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.hh + " hours start");
+        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.hh);
+        lcd.print(" hours start");
 
         //Настраиваем часы начала занятия
         if (btn_chk_state(bLeftOrDown)) {
@@ -251,22 +197,23 @@ void loop() {
         } else if (btn_chk_state(bRightOrUp)) {
           time_edit::add_hour(&(s[select_schedule].schedule[level_submenu_1].time_start));
         }
+
+        //По нажатию ОК
+        else if (btn_chk_state(bOkOrSave)) {
+          if (level_submenu_2 < 3)
+            level_submenu_2++;
+          else if (level_submenu_1 < s[select_schedule].count) {
+            level_submenu_1++;
+          }
+        }
       }
-      
 
       while (level_submenu_2 == 1) {
-#if defined(debug)
-        Serial.print(level_menu);
-        Serial.print(" ");
-        Serial.print(level_submenu_1);
-        Serial.print(" ");
-        Serial.print(level_submenu_2);
-        Serial.print(" | ");
-#endif
         btn_state_read();
 
         lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.mm + " min start");
+        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.mm);
+        lcd.print(" min start");
 
         //Настраиваем минуты начала занятия
         if (btn_chk_state(bLeftOrDown)) {
@@ -275,21 +222,13 @@ void loop() {
           time_edit::add_minutes(&(s[select_schedule].schedule[level_submenu_1].time_start));
         }
       }
-      
 
       while (level_submenu_2 == 2) {
-#if defined(debug)
-        Serial.print(level_menu);
-        Serial.print(" ");
-        Serial.print(level_submenu_1);
-        Serial.print(" ");
-        Serial.print(level_submenu_2);
-        Serial.print(" | ");
-#endif
         btn_state_read();
 
         lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.hh + " hours end");
+        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.hh);
+        lcd.print(" hours end");
 
         //Настраиваем часы конца занятия
         if (btn_chk_state(bLeftOrDown)) {
@@ -298,21 +237,13 @@ void loop() {
           time_edit::add_hour(&(s[select_schedule].schedule[level_submenu_1].time_end));
         }
       }
-      
 
       while (level_submenu_2 == 3) {
-#if defined(debug)
-        Serial.print(level_menu);
-        Serial.print(" ");
-        Serial.print(level_submenu_1);
-        Serial.print(" ");
-        Serial.print(level_submenu_2);
-        Serial.print(" | ");
-#endif
         btn_state_read();
 
         lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.mm + " min end");
+        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.mm);
+        lcd.print(" min end");
 
         //Настраиваем минуты конца занятия
         if (btn_chk_state(bLeftOrDown)) {
@@ -321,8 +252,6 @@ void loop() {
           time_edit::add_minutes(&(s[select_schedule].schedule[level_submenu_1].time_end));
         }
       }
-      
-
 
       //Принимаем изменения
       if (btn_chk_state(bOkOrSave)) {
@@ -331,17 +260,8 @@ void loop() {
       }
     }
   }
-  
 
   while (level_menu == 2) {
-#if defined(debug)
-    Serial.print(level_menu);
-    Serial.print(" ");
-    Serial.print(level_submenu_1);
-    Serial.print(" ");
-    Serial.print(level_submenu_2);
-    Serial.print(" | ");
-#endif
     btn_state_read();
 
     if (rtc.now().second() != prev.second()) {
@@ -354,19 +274,33 @@ void loop() {
       lcd.print(":");
       lcd.print(rtc.now().second());
     }
-
     if (btn_chk_state(bNoOrExit)) level_menu = 1;
   }
-  
 }
 
 void btn_state_read() {
-  for(byte i = 0; i < btn_count; i++) {
+  for (byte i = 0; i < btn_count; i++) {
     btn_prev[i] = btn_state[i];
     btn_state[i] = digitalRead(btn_pin[i]);
   }
+  printInfo();
+}
 
-#ifdef defined(debug)
+
+bool btn_chk_state(byte btn) {
+  if ((btn_state[btn] == !btn_prev[btn]) && btn_state[btn] == is_pressed) {
+    return true;
+  }
+  else return false;
+}
+
+void printInfo() {
+  Serial.print(level_menu);
+  Serial.print(" ");
+  Serial.print(level_submenu_1);
+  Serial.print(" ");
+  Serial.print(level_submenu_2);
+  Serial.print(" | ");
   Serial.print(btn_chk_state(0));
   Serial.print(" ");
   Serial.print(btn_chk_state(1));
@@ -375,14 +309,4 @@ void btn_state_read() {
   Serial.print(" ");
   Serial.print(btn_chk_state(3));
   Serial.print("\n");
-#endif
-
-}
-
-
-bool btn_chk_state(byte btn) {
-  if ((btn_state[btn] && !btn_prev[btn]) && btn_state[btn] == is_pressed) {
-    return true;
-  }
-  else return false;
 }
