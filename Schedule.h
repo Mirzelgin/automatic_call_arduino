@@ -1,26 +1,21 @@
 namespace tools {
 enum days_of_the_week { MON, TUE, WED, THU, FRI, SAT };
 
-struct t
-{
-  byte hh;
-  byte mm;
-};
-
 struct lesson
 {
   bool active;
-  t time_start;
-  t time_end;
+  DateTime time_start;
+  DateTime time_end;
 };
 
+/*
 class time_edit {
 public:
-  static void add_hour(t* st) {
+  static void add_hour(DateTime* st) {
     *st = add_hour(*st);
   }
 
-  static t add_hour(t st) {
+  static DateTime add_hour(DateTime st) {
     if (st.hh < 23) st.hh++;
     else st.hh = 0;
     return st;
@@ -56,6 +51,7 @@ public:
     return st;
   }
 };
+*/
 
 class Schedule
 {

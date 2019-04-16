@@ -28,10 +28,10 @@ byte btn_state[btn_count];
 #define relay A4
 byte relay_state = LOW;
 
-byte level_menu = 0;       //Хранит текущий уровень отображения меню
-byte level_submenu_1 = 20; //Используется для настройки различных занятий
-byte level_submenu_2 = 0;  //Используется для настроки одного занятия
-byte select_schedule = 0;  //Выбраное расписание, используется при настройке
+byte l_m = 0;       //Хранит текущий уровень отображения меню
+byte l_sm_1 = 20; //Используется для настройки различных занятий
+bool l_sm_2 = true;  //Используется для настроки одного занятия
+byte sel_s = 0;  //Выбраное расписание, используется при настройке
 
 //LiquidCrystal lcd(13, 12, 6, 5, 4, 3); //Pins used for RS,E,D4,D5,D6,D7
 LiquidCrystal_I2C lcd(0x27, 16, 2);
@@ -85,36 +85,26 @@ void loop() {
 
   //return;
 
-  while (level_menu == 0) {
-    btn_state_read();
-
-    if (rtc.now().second() != prev.second()) {
-      prev = rtc.now();
-      //Очищаем дисплей и предлагаем заполнить расписание
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print(" ENTER ALL INFO ");
-      lcd.setCursor(0, 1);
-      lcd.print(" YES*       NO# ");
-    }
+  if (l_m == 0) { //Включение устройства, предложение о настройке
+    //Очищаем дисплей и предлагаем заполнить расписание
+    lcd.clear();
+    lcd.setCursor(0, 0);
+    lcd.print(" ENTER ALL INFO ");
+    lcd.setCursor(0, 1);
+    lcd.print(" YES*       NO# ");
 
     if (btn_chk_state(bOkOrSave)) {
-      level_menu = 1;
+      l_m = 1;
     } else if (btn_chk_state(bNoOrExit)) {
-      level_menu = 2;
+      l_m = 2;
     }
-  }
-
-
-  //Мастер настройки расписания
-  while (level_menu == 1) {
-    btn_state_read();
+  } 
+  /**************************************************/
+  else if (l_m == 1) {  //Мастер настройки расписания
 
     //Приступаем к настройке
     //Выбор типа расписания
-    while (level_submenu_1 == 20) {
-      btn_state_read();
-
+    if (l_sm_1 == 20) {
       if (rtc.now().second() != prev.second()) {
         prev = rtc.now();
         lcd.clear();
@@ -122,26 +112,24 @@ void loop() {
         lcd.print("Schedule type");
         lcd.setCursor(0, 1);
         lcd.print("#");
-        lcd.print(select_schedule);
+        lcd.print(sel_s);
       }
 
-      //Изменяем значение select_schedule
+      //Изменяем значение sel_s
       if (btn_chk_state(bLeftOrDown)) {
-        if (select_schedule > 0) select_schedule--;
+        if (sel_s > 0) sel_s--;
       } else if (btn_chk_state(bRightOrUp)) {
-        if (select_schedule < number_of_type - 1) select_schedule++;
+        if (sel_s < number_of_type - 1) sel_s++;
       }
 
       //Принимаем изменения
       else if (btn_chk_state(bOkOrSave)) {
-        level_submenu_1 = 30;
+        l_sm_1 = 30;
       }
     }
 
-
     //Выбираем количество занятий в расписании
-    while (level_submenu_1 == 30) {
-
+    else if (l_sm_1 == 30) {
       btn_state_read();
 
       if (rtc.now().second() != prev.second()) {
@@ -149,119 +137,96 @@ void loop() {
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Schedule type #");
-        lcd.print(select_schedule);
+        lcd.print(sel_s);
         lcd.setCursor(0, 1);
         lcd.print("Lessons: ");
-        lcd.print(s[select_schedule].count);
+        lcd.print(s[sel_s].count);
       }
 
-      //Изменяем значение s[select_schedule].count
+      //Изменяем значение s[sel_s].count
       //в диапазоне от 1 до max_lessons
       if (btn_chk_state(bLeftOrDown)) {
-        if (s[select_schedule].count > 1) s[select_schedule].count--;
+        if (s[sel_s].count > 1) s[sel_s].count--;
       } else if (btn_chk_state(bRightOrUp)) {
-        if (s[select_schedule].count < max_lessons) s[select_schedule].count++;
+        if (s[sel_s].count < max_lessons) s[sel_s].count++;
       }
 
       //Принимаем изменения
       else if (btn_chk_state(bOkOrSave)) {
 
         //Применяем выбранное кол-во занятий
-        s[select_schedule].begin();
+        s[sel_s].begin();
 
         //Переходим к настройке занятий
-        level_submenu_1 = 0;
+        l_sm_1 = 0;
       }
     }
 
     //Настройка занятий
-    while (level_submenu_1 >= 0 && level_submenu_1 < s[select_schedule].count) {
+    else if (l_sm_1 >= 0 && l_sm_1 < s[sel_s].count) {
       btn_state_read();
 
       lcd.clear();
       lcd.setCursor(0, 0);
       lcd.print("Lesson #");
-      lcd.print(level_submenu_1 + 1);
+      lcd.print(l_sm_1 + 1);
 
-      //Настраиваем время начала и конца выбранного занятия
-      while (level_submenu_2 == 0) {
-        btn_state_read();
-
+      if (l_sm_2) {   //Настраиваем время начала занятия
         lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.hh);
-        lcd.print(" hours start");
+        lcd.print("start: ");
+        lcd.print(s[sel_s].schedule[l_sm_1].time_start.hour());
+        lcd.print(":");
+        lcd.print(s[sel_s].schedule[l_sm_1].time_start.minute());
 
         //Настраиваем часы начала занятия
-        if (btn_chk_state(bLeftOrDown)) {
-          time_edit::subtract_hour(&(s[select_schedule].schedule[level_submenu_1].time_start));
-        } else if (btn_chk_state(bRightOrUp)) {
-          time_edit::add_hour(&(s[select_schedule].schedule[level_submenu_1].time_start));
+        if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
+          s[sel_s].schedule[l_sm_1].time_start =+ new TimeSpan(0, 1, 0, 0);
+        } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
+          s[sel_s].schedule[l_sm_1].time_start =+ new TimeSpan(0, 0, 1, 0);
+        }
+
+        //По нажатию ОК переходим к настроке времени конца занятия
+        else if (btn_chk_state(bOkOrSave)) {
+          l_sm_2 = false;
+        }
+
+        //По нажатию Назад
+        else if (btn_chk_state(bNoOrExit)) {
+          l_sm_2 = true;
+          if (l_sm_1 != 0) l_sm_1--;
+        }
+      }
+
+      else {   //Настраиваем время конца занятия
+        lcd.setCursor(0, 1);
+        lcd.print("end:   ");
+        lcd.print(s[sel_s].schedule[l_sm_1].time_end.hour());
+        lcd.print(":");
+        lcd.print(s[sel_s].schedule[l_sm_1].time_end.minute());
+
+        //Настраиваем часы начала занятия
+        if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
+          s[sel_s].schedule[l_sm_1].time_end =+ new TimeSpan(0, 1, 0, 0);
+        } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
+          s[sel_s].schedule[l_sm_1].time_end =+ new TimeSpan(0, 0, 1, 0);
         }
 
         //По нажатию ОК
         else if (btn_chk_state(bOkOrSave)) {
-          if (level_submenu_2 < 3)
-            level_submenu_2++;
-          else if (level_submenu_1 < s[select_schedule].count) {
-            level_submenu_1++;
-          }
+          l_sm_2 = true;
+          l_sm_1++;
         }
-      }
 
-      while (level_submenu_2 == 1) {
-        btn_state_read();
-
-        lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_start.mm);
-        lcd.print(" min start");
-
-        //Настраиваем минуты начала занятия
-        if (btn_chk_state(bLeftOrDown)) {
-          time_edit::subtract_minutes(&(s[select_schedule].schedule[level_submenu_1].time_start));
-        } else if (btn_chk_state(bRightOrUp)) {
-          time_edit::add_minutes(&(s[select_schedule].schedule[level_submenu_1].time_start));
+        //По нажатию Назад
+        else if (btn_chk_state(bNoOrExit)) {
+          l_sm_2 = false;
+          if (l_sm_1 != 0) l_sm_1--;
         }
-      }
-
-      while (level_submenu_2 == 2) {
-        btn_state_read();
-
-        lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.hh);
-        lcd.print(" hours end");
-
-        //Настраиваем часы конца занятия
-        if (btn_chk_state(bLeftOrDown)) {
-          time_edit::subtract_hour(&(s[select_schedule].schedule[level_submenu_1].time_end));
-        } else if (btn_chk_state(bRightOrUp)) {
-          time_edit::add_hour(&(s[select_schedule].schedule[level_submenu_1].time_end));
-        }
-      }
-
-      while (level_submenu_2 == 3) {
-        btn_state_read();
-
-        lcd.setCursor(0, 1);
-        lcd.print(s[select_schedule].schedule[level_submenu_1].time_end.mm);
-        lcd.print(" min end");
-
-        //Настраиваем минуты конца занятия
-        if (btn_chk_state(bLeftOrDown)) {
-          time_edit::subtract_minutes(&(s[select_schedule].schedule[level_submenu_1].time_end));
-        } else if (btn_chk_state(bRightOrUp)) {
-          time_edit::add_minutes(&(s[select_schedule].schedule[level_submenu_1].time_end));
-        }
-      }
-
-      //Принимаем изменения
-      if (btn_chk_state(bOkOrSave)) {
-        if (level_submenu_2 < 3) level_submenu_2++;
-        else if (level_submenu_1 < s[select_schedule].count - 1);
       }
     }
   }
 
-  while (level_menu == 2) {
+  while (l_m == 2) {
     btn_state_read();
 
     if (rtc.now().second() != prev.second()) {
@@ -274,7 +239,7 @@ void loop() {
       lcd.print(":");
       lcd.print(rtc.now().second());
     }
-    if (btn_chk_state(bNoOrExit)) level_menu = 1;
+    if (btn_chk_state(bNoOrExit)) l_m = 1;
   }
 }
 
@@ -288,18 +253,15 @@ void btn_state_read() {
 
 
 bool btn_chk_state(byte btn) {
-  if ((btn_state[btn] == !btn_prev[btn]) && btn_state[btn] == is_pressed) {
-    return true;
-  }
-  else return false;
+  return (btn_state[btn] == !btn_prev[btn]) && (btn_state[btn] == is_pressed) ;
 }
 
 void printInfo() {
-  Serial.print(level_menu);
+  Serial.print(l_m);
   Serial.print(" ");
-  Serial.print(level_submenu_1);
+  Serial.print(l_sm_1);
   Serial.print(" ");
-  Serial.print(level_submenu_2);
+  Serial.print(l_sm_2);
   Serial.print(" | ");
   Serial.print(btn_chk_state(0));
   Serial.print(" ");
