@@ -1,3 +1,5 @@
+#include <RTClib.h>
+
 namespace tools {
 enum days_of_the_week { MON, TUE, WED, THU, FRI, SAT };
 
@@ -61,7 +63,7 @@ class Schedule
     lesson* schedule;
 
     Schedule() {
-      count = 0;
+      count = 1;
       for (int i = 0; i < count; i++)
       {
         (*(schedule + i)).active = false;
