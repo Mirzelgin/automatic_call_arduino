@@ -1,7 +1,8 @@
-#include <LiquidCrystal_I2C.h>
+#include <RTClib.h>
+
+#include "LiquidCrystal_I2C.h"
 #include <Wire.h>
 #include <EEPROM.h>
-#include "RTClib.h"
 //#include <LiquidCrystal.h>
 
 #define debug
@@ -76,37 +77,38 @@ void setup() {
   }
 
   delay(1000);
+
+  //Очищаем дисплей и предлагаем заполнить расписание
+  lcd.clear();
+  lcd.setCursor(0, 0);
+  lcd.print(" ENTER ALL INFO ");
+  lcd.setCursor(0, 1);
+  lcd.print(" YES*       NO# ");
 }
 
 DateTime prev;
+long prevMillis = millis();
 int span = 100;
 void loop() {
   btn_state_read();
 
   //return;
 
-  if (l_m == 0) { //Включение устройства, предложение о настройке
-    //Очищаем дисплей и предлагаем заполнить расписание
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print(" ENTER ALL INFO ");
-    lcd.setCursor(0, 1);
-    lcd.print(" YES*       NO# ");
-
+  if (l_m == 0) { //Включение устройства, ожидание ответа на предложение о настройке
     if (btn_chk_state(bOkOrSave)) {
       l_m = 1;
     } else if (btn_chk_state(bNoOrExit)) {
       l_m = 2;
     }
-  } 
+  }
   /**************************************************/
   else if (l_m == 1) {  //Мастер настройки расписания
 
     //Приступаем к настройке
     //Выбор типа расписания
     if (l_sm_1 == 20) {
-      if (rtc.now().second() != prev.second()) {
-        prev = rtc.now();
+      if (millis() - prevMillis > span) {
+        prevMillis = millis();
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Schedule type");
@@ -130,10 +132,8 @@ void loop() {
 
     //Выбираем количество занятий в расписании
     else if (l_sm_1 == 30) {
-      btn_state_read();
-
-      if (rtc.now().second() != prev.second()) {
-        prev = rtc.now();
+      if (millis() - prevMillis > span) {
+        prevMillis = millis();
         lcd.clear();
         lcd.setCursor(0, 0);
         lcd.print("Schedule type #");
@@ -164,12 +164,13 @@ void loop() {
 
     //Настройка занятий
     else if (l_sm_1 >= 0 && l_sm_1 < s[sel_s].count) {
-      btn_state_read();
-
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Lesson #");
-      lcd.print(l_sm_1 + 1);
+      if (millis() - prevMillis > span) {
+        prevMillis = millis();
+        lcd.clear();
+        lcd.setCursor(0, 0);
+        lcd.print("Lesson #");
+        lcd.print(l_sm_1 + 1);
+      }
 
       if (l_sm_2) {   //Настраиваем время начала занятия
         lcd.setCursor(0, 1);
@@ -180,9 +181,9 @@ void loop() {
 
         //Настраиваем часы начала занятия
         if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
-          s[sel_s].schedule[l_sm_1].time_start =+ new TimeSpan(0, 1, 0, 0);
+          s[sel_s].schedule[l_sm_1].time_start = + new TimeSpan(0, 1, 0, 0);
         } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
-          s[sel_s].schedule[l_sm_1].time_start =+ new TimeSpan(0, 0, 1, 0);
+          s[sel_s].schedule[l_sm_1].time_start = + new TimeSpan(60);
         }
 
         //По нажатию ОК переходим к настроке времени конца занятия
@@ -206,15 +207,15 @@ void loop() {
 
         //Настраиваем часы начала занятия
         if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
-          s[sel_s].schedule[l_sm_1].time_end =+ new TimeSpan(0, 1, 0, 0);
+          s[sel_s].schedule[l_sm_1].time_end = + new TimeSpan(0, 1, 0, 0);
         } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
-          s[sel_s].schedule[l_sm_1].time_end =+ new TimeSpan(0, 0, 1, 0);
+          s[sel_s].schedule[l_sm_1].time_end = + new TimeSpan(0, 0, 1, 0);
         }
 
         //По нажатию ОК
         else if (btn_chk_state(bOkOrSave)) {
           l_sm_2 = true;
-          l_sm_1++;
+          if (l_sm_1 < s[sel_s].count) l_sm_1++;
         }
 
         //По нажатию Назад
@@ -227,7 +228,6 @@ void loop() {
   }
 
   while (l_m == 2) {
-    btn_state_read();
 
     if (rtc.now().second() != prev.second()) {
       prev = rtc.now();
