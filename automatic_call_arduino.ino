@@ -5,26 +5,14 @@
 #include <EEPROM.h>
 //#include <LiquidCrystal.h>
 
-#define debug
-
+#include "Button.h"
 #include "Schedule.h"
 using namespace tools;
 
-#define b1 A0 //кнопка "влево/вниз"
-#define b2 A1 //кнопка "вправо/вверх"
-#define b3 A2 //кнопка "да/сохранить"
-#define b4 A3 //кнопка "нет/выход"
-
-#define bLeftOrDown   0
-#define bRightOrUp    1
-#define bOkOrSave     2
-#define bNoOrExit     3
-
-#define is_pressed LOW //Значение при которм кнопка считается нажатой
-#define btn_count 4
-byte btn_pin[btn_count] = { A0, A1, A2, A3 };
-byte btn_prev[btn_count];
-byte btn_state[btn_count];
+Button bLeftOrDown(A0); //кнопка "влево/вниз"
+Button bRightOrUp(A1);  //кнопка "вправо/вверх"
+Button bOkOrSave(A2);   //кнопка "да/сохранить"
+Button bNoOrExit(A3);   //кнопка "нет/выход"
 
 #define relay A4
 byte relay_state = LOW;
@@ -43,28 +31,20 @@ RTC_DS1307 rtc;
 Schedule s[number_of_type]; //Массив с расписаниями
 
 void setup() {
-  Wire.begin();
-  rtc.begin();
   Serial.begin(9600);
+  rtc.begin();
 
-  //Конфигурируем пины кнопок на вход
-  pinMode(b1, INPUT_PULLUP);
-  pinMode(b2, INPUT_PULLUP);
-  pinMode(b3, INPUT_PULLUP);
-  pinMode(b4, INPUT_PULLUP);
+  //Serial.println("Инициализация часов реального времени...");
+  Serial.println(rtc.isrunning());
 
   //Конфигурируем реле
   pinMode(relay, OUTPUT);
   digitalWrite(relay, LOW);
 
   //Инициализируем дисплей
-  lcd.begin();
+  lcd.begin(16, 2);
+  lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("Engineers Garage");
-  lcd.setCursor(0, 1);
-  lcd.print("   TIME TABLE   ");
-
-  delay(1000);
 
   //Инициализируем модуль RTC
   if (! rtc.isrunning()) {
@@ -73,31 +53,29 @@ void setup() {
     //Задаём RTC модулю дату и время компиляции скетча
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 
-    //Serial.print(rtc.now().second());
+    //Serial.print(now.second());
   }
-
-  delay(1000);
-
-  //Очищаем дисплей и предлагаем заполнить расписание
-  lcd.clear();
-  lcd.setCursor(0, 0);
-  lcd.print(" ENTER ALL INFO ");
-  lcd.setCursor(0, 1);
-  lcd.print(" YES*       NO# ");
 }
 
 DateTime prev;
 long prevMillis = millis();
-int span = 100;
+int span = 500;
 void loop() {
-  btn_state_read();
-
-  //return;
+  DateTime now(rtc.now() + TimeSpan(0, 0, 0, 6));
 
   if (l_m == 0) { //Включение устройства, ожидание ответа на предложение о настройке
-    if (btn_chk_state(bOkOrSave)) {
+    if (millis() - prevMillis > span) {
+      prevMillis = millis();
+      //Очищаем дисплей и предлагаем заполнить расписание
+      lcd.clear();
+      lcd.setCursor(0, 0);
+      lcd.print(" ENTER ALL INFO ");
+      lcd.setCursor(0, 1);
+      lcd.print(" YES*       NO# ");
+    }
+    if (bOkOrSave.changeButtonStatus() == 1) {
       l_m = 1;
-    } else if (btn_chk_state(bNoOrExit)) {
+    } else if (bNoOrExit.changeButtonStatus() == 1) {
       l_m = 2;
     }
   }
@@ -118,14 +96,14 @@ void loop() {
       }
 
       //Изменяем значение sel_s
-      if (btn_chk_state(bLeftOrDown)) {
+      if (bLeftOrDown.changeButtonStatus() == 1) {
         if (sel_s > 0) sel_s--;
-      } else if (btn_chk_state(bRightOrUp)) {
+      } else if (bRightOrUp.changeButtonStatus() == 1) {
         if (sel_s < number_of_type - 1) sel_s++;
       }
 
       //Принимаем изменения
-      else if (btn_chk_state(bOkOrSave)) {
+      else if (bOkOrSave.changeButtonStatus() == 1) {
         l_sm_1 = 30;
       }
     }
@@ -145,14 +123,14 @@ void loop() {
 
       //Изменяем значение s[sel_s].count
       //в диапазоне от 1 до max_lessons
-      if (btn_chk_state(bLeftOrDown)) {
+      if (bLeftOrDown.changeButtonStatus() == 1) {
         if (s[sel_s].count > 1) s[sel_s].count--;
-      } else if (btn_chk_state(bRightOrUp)) {
+      } else if (bRightOrUp.changeButtonStatus() == 1) {
         if (s[sel_s].count < max_lessons) s[sel_s].count++;
       }
 
       //Принимаем изменения
-      else if (btn_chk_state(bOkOrSave)) {
+      else if (bOkOrSave.changeButtonStatus() == 1) {
 
         //Применяем выбранное кол-во занятий
         s[sel_s].begin();
@@ -180,19 +158,20 @@ void loop() {
         lcd.print(s[sel_s].schedule[l_sm_1].time_start.minute());
 
         //Настраиваем часы начала занятия
-        if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
-          s[sel_s].schedule[l_sm_1].time_start = + new TimeSpan(0, 1, 0, 0);
-        } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
-          s[sel_s].schedule[l_sm_1].time_start = + new TimeSpan(60);
+        if (bLeftOrDown.changeButtonStatus() == 1) {       //кнопка bLeftOrDown изменяет часы
+          s[sel_s].schedule[l_sm_1].time_start = s[sel_s].schedule[l_sm_1].time_start + TimeSpan(0, 1, 0, 0);
+          Serial.println(s[sel_s].schedule[l_sm_1].time_start.second());
+        } else if (bRightOrUp.changeButtonStatus() == 1) { //кнопка bRightOrUp изменяет минуты
+          s[sel_s].schedule[l_sm_1].time_start = s[sel_s].schedule[l_sm_1].time_start + TimeSpan(0, 0, 1, 0);
         }
 
         //По нажатию ОК переходим к настроке времени конца занятия
-        else if (btn_chk_state(bOkOrSave)) {
+        else if (bOkOrSave.changeButtonStatus() == 1) {
           l_sm_2 = false;
         }
 
         //По нажатию Назад
-        else if (btn_chk_state(bNoOrExit)) {
+        else if (bNoOrExit.changeButtonStatus() == 1) {
           l_sm_2 = true;
           if (l_sm_1 != 0) l_sm_1--;
         }
@@ -206,20 +185,20 @@ void loop() {
         lcd.print(s[sel_s].schedule[l_sm_1].time_end.minute());
 
         //Настраиваем часы начала занятия
-        if (btn_chk_state(bLeftOrDown)) {       //кнопка bLeftOrDown изменяет часы
-          s[sel_s].schedule[l_sm_1].time_end = + new TimeSpan(0, 1, 0, 0);
-        } else if (btn_chk_state(bRightOrUp)) { //кнопка bRightOrUp изменяет минуты
-          s[sel_s].schedule[l_sm_1].time_end = + new TimeSpan(0, 0, 1, 0);
+        if (bLeftOrDown.changeButtonStatus() == 1) {       //кнопка bLeftOrDown изменяет часы
+          s[sel_s].schedule[l_sm_1].time_end = s[sel_s].schedule[l_sm_1].time_end + TimeSpan(0, 1, 0, 0);
+        } else if (bRightOrUp.changeButtonStatus() == 1) { //кнопка bRightOrUp изменяет минуты
+          s[sel_s].schedule[l_sm_1].time_end = s[sel_s].schedule[l_sm_1].time_end + TimeSpan(0, 0, 1, 0);
         }
 
         //По нажатию ОК
-        else if (btn_chk_state(bOkOrSave)) {
+        else if (bOkOrSave.changeButtonStatus() == 1) {
           l_sm_2 = true;
           if (l_sm_1 < s[sel_s].count) l_sm_1++;
         }
 
         //По нажатию Назад
-        else if (btn_chk_state(bNoOrExit)) {
+        else if (bNoOrExit.changeButtonStatus() == 1) {
           l_sm_2 = false;
           if (l_sm_1 != 0) l_sm_1--;
         }
@@ -227,48 +206,35 @@ void loop() {
     }
   }
 
-  while (l_m == 2) {
+  if (l_m == 2) {
 
-    if (rtc.now().second() != prev.second()) {
-      prev = rtc.now();
+    if (now.second() != prev.second()) {
+      prev = now;
       lcd.clear();
       lcd.setCursor(0, 0);
-      lcd.print(rtc.now().hour());
+      lcd.print(now.hour());
       lcd.print(":");
-      lcd.print(rtc.now().minute());
+      lcd.print(now.minute());
       lcd.print(":");
-      lcd.print(rtc.now().second());
+      lcd.print(now.second());
+
+      /*
+            Serial.print(now.year(), DEC);
+            Serial.print('/');
+            Serial.print(now.month(), DEC);
+            Serial.print('/');
+            Serial.print(now.day(), DEC);
+            Serial.print(" (");
+            Serial.print(") ");
+            Serial.print(now.hour(), DEC);
+            Serial.print(':');
+            Serial.print(now.minute(), DEC);
+            Serial.print(':');
+            Serial.print(now.second(), DEC);
+            Serial.println();
+      */
     }
-    if (btn_chk_state(bNoOrExit)) l_m = 1;
+
+    if (bNoOrExit.changeButtonStatus() == 3) l_m = 0;
   }
-}
-
-void btn_state_read() {
-  for (byte i = 0; i < btn_count; i++) {
-    btn_prev[i] = btn_state[i];
-    btn_state[i] = digitalRead(btn_pin[i]);
-  }
-  printInfo();
-}
-
-
-bool btn_chk_state(byte btn) {
-  return (btn_state[btn] == !btn_prev[btn]) && (btn_state[btn] == is_pressed) ;
-}
-
-void printInfo() {
-  Serial.print(l_m);
-  Serial.print(" ");
-  Serial.print(l_sm_1);
-  Serial.print(" ");
-  Serial.print(l_sm_2);
-  Serial.print(" | ");
-  Serial.print(btn_chk_state(0));
-  Serial.print(" ");
-  Serial.print(btn_chk_state(1));
-  Serial.print(" ");
-  Serial.print(btn_chk_state(2));
-  Serial.print(" ");
-  Serial.print(btn_chk_state(3));
-  Serial.print("\n");
 }
