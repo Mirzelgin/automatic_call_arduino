@@ -1,8 +1,9 @@
 #include <RTClib.h>
+#include <time.h>
 
 
 namespace tools {
-enum days_of_the_week { MON, TUE, WED, THU, FRI, SAT };
+char* days_of_the_week[] { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
 
 struct lesson
 {

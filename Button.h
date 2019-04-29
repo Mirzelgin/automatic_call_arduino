@@ -180,7 +180,7 @@ class Button {
 
     const int delayFalse = 10;                // Длительность, меньше которой не регистрируется единоразовый клик
     const int delayLongSingleClick = 1000;    // Длительность зажатия кнопки для выхода в режим увеличения громкости
-    const int delayDeltaDoubleClick = 800;    // Длительность между кликами, когда будет зафиксирован двойной клик
+    const int delayDeltaDoubleClick = 100;    // Длительность между кликами, когда будет зафиксирован двойной клик
 };
 
 class Keypad {
