@@ -5,18 +5,37 @@
 namespace tools {
 char* days_of_the_week[] { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
 
-struct lesson
+byte bell[8] = 
 {
-  bool active;
-  DateTime time_start;
-  DateTime time_end;
+  B00000,
+  B00100,
+  B01010,
+  B01010,
+  B01010,
+  B11111,
+  B00100,
+  B00000,
+};
+
+class lesson
+{
+  public:
+    bool active;
+    DateTime time_start;
+    DateTime time_end;
+
+    lesson(){
+      active      = true;
+      time_start  = DateTime(2001, 1, 1, 0, 1);
+      time_end    = DateTime(2001, 1, 1, 0, 2);
+    }
 };
 
 /*
-class time_edit {
-public:
+  class time_edit {
+  public:
   static void add_hour(DateTime* st) {
-    *st = add_hour(*st);
+     st = add_hour(*st);
   }
 
   static DateTime add_hour(DateTime st) {
@@ -26,7 +45,7 @@ public:
   }
 
   static void subtract_hour(t* st) {
-    *st = subtract_hour(*st);
+     st = subtract_hour(*st);
   }
 
   static t subtract_hour(t st) {
@@ -36,7 +55,7 @@ public:
   }
 
   static void add_minutes(t* st) {
-    *st = add_minutes(*st);
+     st = add_minutes(*st);
   }
 
   static t add_minutes(t st) {
@@ -46,7 +65,7 @@ public:
   }
 
   static void subtract_minutes(t* st) {
-    *st = subtract_minutes(*st);
+     st = subtract_minutes(*st);
   }
 
   static t subtract_minutes(t st) {
@@ -54,30 +73,19 @@ public:
     else st.mm = 59;
     return st;
   }
-};
+  };
 */
 
 class Schedule
 {
   public:
     bool days_of_action[6];
-    int count;
+    int count = 1;
     lesson* schedule;
 
     Schedule() {
-      count = 1;
-      for (int i = 0; i < count; i++)
-      {
-        (*(schedule + i)).active = false;
-      }
-    }
-
-    Schedule(int count) {
-      this->count = count;
-      schedule = new lesson[count];
-      for (int i = 0; i < count; i++)
-      {
-        (*(schedule + i)).active = false;
+      for (int i = 0; i < 6; i++){
+        days_of_action[i] = true;
       }
     }
 

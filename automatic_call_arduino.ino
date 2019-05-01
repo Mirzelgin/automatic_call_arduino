@@ -17,8 +17,8 @@ const int p = 250;
 
 #define relay A4
 bool relayState = LOW;
-const byte timeIsOn = 5000;
-unsigned int timeOn = 0;
+const int timeIsOn = 5000;
+long timeOn = 0;
 
 byte l_m = 0;       //Хранит текущий уровень отображения меню
 byte l_sm_1 = 30; //Используется для выбора различных переменных меню
@@ -48,6 +48,7 @@ void setup() {
   lcd.begin(16, 2);
   lcd.backlight();
   lcd.setCursor(0, 0);
+  lcd.createChar(1, bell);
 
   //Инициализируем модуль RTC
   if (!rtc.isrunning()) {
@@ -56,12 +57,7 @@ void setup() {
 
   //Задаём RTC модулю дату и время компиляции скетча
   //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  rtc.adjust(DateTime(2019, 4, 29, 6, 27, 00));
-  /*
-    Serial.print(F(__DATE__));
-    Serial.print(" ");
-    Serial.println(F(__TIME__));
-  */
+  rtc.adjust(DateTime(2000, 1, 1));
 }
 
 DateTime prev;
@@ -255,7 +251,7 @@ void loop() {
       if (millis() - timeOn > timeIsOn && relayState == HIGH) {
         relayState = LOW;
         digitalWrite(relay, relayState);
-        Serial.println("off");
+        Serial.println("off" + String(millis()));
       }
 
       if (now.second() != prev.second()) {
@@ -265,6 +261,8 @@ void loop() {
         lcd.print(days_of_the_week[now.dayOfTheWeek()]);
         lcd.print(" ");
         lcd.print(printTime(now));
+        lcd.print(" \1 ");
+        lcd.print(relayState == LOW ? "off" : "on");
         lcd.setCursor(0, 1);
 
         int sn = 0;
@@ -288,51 +286,42 @@ void loop() {
         for (int i = 0; i < s[0].count; i++) {
           ts = s[sn].schedule[i].time_start;
           te = s[sn].schedule[i].time_end;
+          
+          lcd.setCursor(0, 1);
 
-          if (s[sn].schedule[i].active) {
-            lcd.print(sn);
-            lcd.print('.');
-            lcd.print(i + 1);
-            lcd.print(":");
-
-            if (now.hour() <= ts.hour() && now.minute() <= ts.minute()) {
-              if ((now.hour() == ts.hour() && now.minute() == ts.minute() && now.second() == ts.second()) && relayState == LOW) {
-                relayOn();
-              }
-              else {
-                lcd.print(printTime(ts));
-              }
-            } else if (now.hour() <= te.hour() && now.minute() <= te.minute()) {
-              if ((now.hour() == te.hour() && now.minute() == te.minute() && now.second() == te.second()) && relayState == LOW) {
-                relayOn();
-              }
-              else {
-                lcd.print(printTime(te));
-              }
+          if (compareTime(now, ts) <= 0) {
+            if (compareTime(now, ts) == 0 && relayState == LOW) {
+              relayOn();
             }
+            lcd.print("Start #" + String(sn) + '.' + String(i + 1) + ' ');
+            lcd.print(printTime(ts));
+            break;
+          } else if (compareTime(now, te) <= 0) {
+            if (compareTime(now, te) == 0 && relayState == LOW) {
+              relayOn();
+            }
+            lcd.print("End #" + String(sn) + '.' + String(i + 1) + ' ');
+            lcd.print(printTime(te));
+            break;
           }
-        } else {
-          lcd.print("Not now!");
-          break;
+
+          /*
+                Serial.print(now.year(), DEC);
+                Serial.print('/');
+                Serial.print(now.month(), DEC);
+                Serial.print('/');
+                Serial.print(now.day(), DEC);
+                Serial.print(" (");
+                Serial.print(") ");
+                Serial.print(now.hour(), DEC);
+                Serial.print(':');
+                Serial.print(now.minute(), DEC);
+                Serial.print(':');
+                Serial.print(now.second(), DEC);
+                Serial.println();
+          */
         }
-
-        /*
-              Serial.print(now.year(), DEC);
-              Serial.print('/');
-              Serial.print(now.month(), DEC);
-              Serial.print('/');
-              Serial.print(now.day(), DEC);
-              Serial.print(" (");
-              Serial.print(") ");
-              Serial.print(now.hour(), DEC);
-              Serial.print(':');
-              Serial.print(now.minute(), DEC);
-              Serial.print(':');
-              Serial.print(now.second(), DEC);
-              Serial.println();
-        */
       }
-
       if (bNoOrExit.changeButtonStatus() == 3) l_m = 0;
       break;
   }
@@ -342,20 +331,18 @@ void relayOn() {
   timeOn = millis();
   relayState = HIGH;
   digitalWrite(relay, relayState);
-  Serial.println("on");
+  Serial.println("on" + String(millis()));
 }
 
-bool compare(DateTime a, char ch, DateTime b) {
-  switch (ch) {
-    case '<':
-      break;
-    case '=':
-      break;
-    case '>':
-      break;
-  }
+int compareTime(DateTime a, DateTime b) {
+  long as = ((a.hour() * 60) + a.minute()) * 60 + a.second();
+  long bs = ((b.hour() * 60) + b.minute()) * 60 + b.second();
+
+  if (as < bs) return -1;
+  else if (as == bs) return 0;
+  else return 1;
 }
 
 String printTime(DateTime t) {
-  return String(t.hour()) + ':' + String(t.minute()) + ':' + String(t.second());
+  return String(t.hour()) + ':' + String(t.minute());
 }
