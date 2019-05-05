@@ -1,5 +1,5 @@
 #include <RTClib.h>
-#include "LiquidCrystal_I2C.h"
+#include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <EEPROM.h>
 //#include <LiquidCrystal.h>
@@ -45,7 +45,7 @@ void setup() {
   digitalWrite(relay, LOW);
 
   //Инициализируем дисплей
-  lcd.begin(16, 2);
+  lcd.begin();
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.createChar(1, bell);
@@ -65,12 +65,6 @@ long prevMillis = millis();
 int span = 500;
 void loop() {
   DateTime now(rtc.now() + TimeSpan(0, 0, 0, 6));
-  /*
-    String str = String(now.year()) + '.' + String(now.month()) + '.' + String(now.day());
-    Serial.print(str);
-    Serial.print("  ");
-    Serial.println(now.dayOfTheWeek());
-  */
 
   switch (l_m) {
     case 0: //Включение устройства, ожидание ответа на предложение о настройке
@@ -286,7 +280,7 @@ void loop() {
         for (int i = 0; i < s[0].count; i++) {
           ts = s[sn].schedule[i].time_start;
           te = s[sn].schedule[i].time_end;
-          
+
           lcd.setCursor(0, 1);
 
           if (compareTime(now, ts) <= 0) {
@@ -304,22 +298,6 @@ void loop() {
             lcd.print(printTime(te));
             break;
           }
-
-          /*
-                Serial.print(now.year(), DEC);
-                Serial.print('/');
-                Serial.print(now.month(), DEC);
-                Serial.print('/');
-                Serial.print(now.day(), DEC);
-                Serial.print(" (");
-                Serial.print(") ");
-                Serial.print(now.hour(), DEC);
-                Serial.print(':');
-                Serial.print(now.minute(), DEC);
-                Serial.print(':');
-                Serial.print(now.second(), DEC);
-                Serial.println();
-          */
         }
       }
       if (bNoOrExit.changeButtonStatus() == 3) l_m = 0;
@@ -345,4 +323,37 @@ int compareTime(DateTime a, DateTime b) {
 
 String printTime(DateTime t) {
   return String(t.hour()) + ':' + String(t.minute());
+}
+
+uint8_t* writeToEeprom() {
+
+}
+
+uint8_t* toByte(Schedule s)
+{
+  //uint8_t count = sizeof(s) / sizeof(Schedule)
+  uint8_t* buf = new uint8_t[sizeof(s)];
+  memcpy(buf, &s, sizeof(s));
+  return buf;
+}
+
+Schedule* fromByte(uint8_t* buf) {
+  Schedule* temp = new Schedule();
+  uint8_t s = sizeof(buf) / sizeof(uint8_t);
+  memcpy(temp, &buf, s);
+  return temp;
+}
+
+void toString(Schedule sch) {
+  Serial.println("*********BEGIN*********");
+  Serial.println("days_of_action");
+  for (int i = 0; i < 6; i++) {
+    Serial.print(' ' + String(sch.days_of_action[i]));
+  }
+  Serial.println();
+  for (int i = 0; i < sch.count; i++) {
+    Serial.println("schedule[" + String(i) + "]");
+    Serial.println(sch.schedule[i].toString());
+  }
+  Serial.println("*********END*********");
 }
