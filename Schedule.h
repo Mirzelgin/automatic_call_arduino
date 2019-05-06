@@ -5,7 +5,7 @@
 namespace tools {
 char* days_of_the_week[] { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
 
-byte bell[8] =
+byte bell[8] = 
 {
   B00000,
   B00100,
@@ -24,12 +24,12 @@ class lesson
     DateTime time_start;
     DateTime time_end;
 
-    lesson() {
+    lesson(){
       active      = true;
       time_start  = DateTime(2001, 1, 1, 0, 1);
       time_end    = DateTime(2001, 1, 1, 0, 2);
     }
-
+    
     String toString() {
       String str = "";
       str = str + "active: " + String(active) + "\n";
@@ -43,17 +43,20 @@ class Schedule
 {
   public:
     bool days_of_action[6];
+    static const int maxCount = 10;
     int count = 1;
-    lesson* schedule;
+    lesson schedule[maxCount];
 
     Schedule() {
-      for (int i = 0; i < 6; i++) {
+      for (int i = 0; i < 6; i++){
         days_of_action[i] = true;
       }
     }
 
     void begin() {
-      schedule = new lesson[count];
+      for (int i = 0; i < maxCount; i++){
+        schedule[i].active = false;
+      }
     }
 
     String toString() {

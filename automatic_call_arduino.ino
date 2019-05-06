@@ -45,7 +45,7 @@ void setup() {
   digitalWrite(relay, LOW);
 
   //Инициализируем дисплей
-  lcd.begin();
+  lcd.begin(16, 2);
   lcd.backlight();
   lcd.setCursor(0, 0);
   lcd.createChar(1, bell);
@@ -80,6 +80,9 @@ void loop() {
       if (bOkOrSave.changeButtonStatus() == 1) {
         l_m = 1;
       } else if (bNoOrExit.changeButtonStatus() == 1) {
+        for (int i = 0; i < number_of_type; i++) {
+          EEPROM.get(i * sizeof(s[i]) + 1, s[i]);
+        }
         l_m = 2;
       }
       break;
@@ -236,18 +239,16 @@ void loop() {
           l_sm_1 = 30;
         }
         else {
+          for (int i = 0; i < number_of_type; i++) {
+            EEPROM.put(i * sizeof(s[i]) + 1, s[i]);
+          }
           l_m = 2;
         }
       }
       break;
 
     case 2:
-      if (millis() - timeOn > timeIsOn && relayState == HIGH) {
-        relayState = LOW;
-        digitalWrite(relay, relayState);
-        Serial.println("off" + String(millis()));
-      }
-
+      static int i = 0;
       if (now.second() != prev.second()) {
         prev = now;
         lcd.clear();
@@ -274,32 +275,38 @@ void loop() {
           break;
         }
 
-        /**************************************************/
-        /**************************************************/
-        /**************************************************/
-        for (int i = 0; i < s[0].count; i++) {
-          ts = s[sn].schedule[i].time_start;
-          te = s[sn].schedule[i].time_end;
+        ts = s[sn].schedule[i].time_start;
+        te = s[sn].schedule[i].time_end;
 
-          lcd.setCursor(0, 1);
-
-          if (compareTime(now, ts) <= 0) {
-            if (compareTime(now, ts) == 0 && relayState == LOW) {
-              relayOn();
-            }
-            lcd.print("Start #" + String(sn) + '.' + String(i + 1) + ' ');
-            lcd.print(printTime(ts));
-            break;
-          } else if (compareTime(now, te) <= 0) {
-            if (compareTime(now, te) == 0 && relayState == LOW) {
-              relayOn();
-            }
-            lcd.print("End #" + String(sn) + '.' + String(i + 1) + ' ');
-            lcd.print(printTime(te));
-            break;
+        if (compareTime(now, ts) <= 0) {
+          if (compareTime(now, ts) == 0) {
+            relayOn();
+            Serial.print("on " + printTime(now));
           }
+          lcd.print("S #" + String(sn) + '.' + String(i + 1) + ' ');
+          lcd.print(printTime(ts));
+        } else if (compareTime(now, te) <= 0) {
+          if (compareTime(now, te) == 0) {
+            relayOn();
+            Serial.print("on " + printTime(now));
+          }
+          lcd.print("E #" + String(sn) + '.' + String(i + 1) + ' ');
+          lcd.print(printTime(te));
+        } else {
+          if (i < s[sn].count - 1) i++;
+          lcd.print("Not now!");
         }
       }
+
+      /**************************************************/
+      /**********Выключаем звонок если включен***********/
+      /**************************************************/
+      if (millis() - timeOn > timeIsOn && relayState == HIGH) {
+        relayState = LOW;
+        digitalWrite(relay, relayState);
+        Serial.println(" off " + printTime(now));
+      }
+
       if (bNoOrExit.changeButtonStatus() == 3) l_m = 0;
       break;
   }
@@ -309,7 +316,6 @@ void relayOn() {
   timeOn = millis();
   relayState = HIGH;
   digitalWrite(relay, relayState);
-  Serial.println("on" + String(millis()));
 }
 
 int compareTime(DateTime a, DateTime b) {
@@ -322,26 +328,7 @@ int compareTime(DateTime a, DateTime b) {
 }
 
 String printTime(DateTime t) {
-  return String(t.hour()) + ':' + String(t.minute());
-}
-
-uint8_t* writeToEeprom() {
-
-}
-
-uint8_t* toByte(Schedule s)
-{
-  //uint8_t count = sizeof(s) / sizeof(Schedule)
-  uint8_t* buf = new uint8_t[sizeof(s)];
-  memcpy(buf, &s, sizeof(s));
-  return buf;
-}
-
-Schedule* fromByte(uint8_t* buf) {
-  Schedule* temp = new Schedule();
-  uint8_t s = sizeof(buf) / sizeof(uint8_t);
-  memcpy(temp, &buf, s);
-  return temp;
+  return String(t.hour()) + ':' + String(t.minute()) + ':' + String(t.second());
 }
 
 void toString(Schedule sch) {

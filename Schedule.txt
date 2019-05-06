@@ -1,0 +1,32 @@
+s[0].count = 4;
+    s[0].begin();
+    s[0].days_of_action[5] = false;
+    //1
+    s[0].schedule[0].time_start = DateTime(2001, 1, 1, 8, 30);
+    s[0].schedule[0].time_end = DateTime(2001, 1, 1, 10, 0);
+    //2
+    s[0].schedule[1].time_start = DateTime(2001, 1, 1, 10, 15);
+    s[0].schedule[1].time_end = DateTime(2001, 1, 1, 11, 45);
+    //3
+    s[0].schedule[2].time_start = DateTime(2001, 1, 1, 12, 25);
+    s[0].schedule[2].time_end = DateTime(2001, 1, 1, 13, 55);
+    //4
+    s[0].schedule[3].time_start = DateTime(2001, 1, 1, 14, 5);
+    s[0].schedule[3].time_end = DateTime(2001, 1, 1, 15, 35);
+
+    s[1].count = 3;
+    s[1].begin();
+    s[1].days_of_action[0] = false;
+    s[1].days_of_action[1] = false;
+    s[1].days_of_action[2] = false;
+    s[1].days_of_action[3] = false;
+    s[1].days_of_action[4] = false;
+    //1
+    s[1].schedule[0].time_start = DateTime(2001, 1, 1, 8, 30);
+    s[1].schedule[0].time_end = DateTime(2001, 1, 1, 10, 0);
+    //2
+    s[1].schedule[1].time_start = DateTime(2001, 1, 1, 10, 15);
+    s[1].schedule[1].time_end = DateTime(2001, 1, 1, 11, 45);
+    //3
+    s[1].schedule[2].time_start = DateTime(2001, 1, 1, 12, 00);
+    s[1].schedule[2].time_end = DateTime(2001, 1, 1, 13, 30);
