@@ -13,11 +13,6 @@ class Button {
       pinMode(pin, INPUT_PULLUP);
     }
 
-    void begin(byte pin) {
-      buttonPin = pin;
-      pinMode(pin, INPUT_PULLUP);
-    }
-
     int getStatus() {
       return event;
     }
@@ -32,47 +27,35 @@ class Button {
       unsigned long timeButton = millis();
 
       switch (currentButtonStatus) {
-
         case 0:
           // В настоящий момент кнопка не нажималась
-
           if (currentButtonClick) {
             // Зафиксировали нажатие кнопки
-
             currentButtonStatus = 1;
             currentButtonStatusStart1 = millis();
-
-
           } else {
             // Кнопка не нажата
             // Ничего не происходит
           }
           break;
-
         case 1:
           // В настоящий момент кнопка на этапе первого нажатия
-
           if (currentButtonClick) {
             // Кнопка все еще нажата
-
             if (timeButton - currentButtonStatusStart1 >= delayLongSingleClick) {
               // Кнопка в нажатом состоянии уже дольше времени, после которого фиксируем длительное одинарное нажатие на кнопку
 
               // Событие длительного давления на кнопку - продолжаем давить
               event = 3;
-
             }
-
           } else {
             // Кнопку отжали обратно
-
             if (timeButton - currentButtonStatusStart1 < delayFalse) {
               // Время, которое была кнопка нажата, меньше минимального времени регистрации клика по кнопке
               // Скорее всего это были какие то флюктуации
               // Отменяем нажатие
               currentButtonStatus = 0;
               event = 0;
-
             } else if (timeButton - currentButtonStatusStart1 < delayLongSingleClick) {
               // Время, которое была кнопка нажата, меньше времени фиксации долгого нажатия на кнопку
               // Значит это первое одноразовое нажатие
@@ -86,36 +69,27 @@ class Button {
               event = 4;
 
             }
-
           }
-
           break;
-
         case 2:
           // Мы находимся в фазе отжатой кнопки в ожидании повторного ее нажатия для фиксации двойного нажатия
           // или, если не дождемся - значит зафиксируем единичное нажатие
-
-
           if (currentButtonClick) {
             // Если кнопку снова нажали
-
             // Проверяем, сколько времени кнопка находилась в отжатом состоянии
             if (timeButton - currentButtonStatusStart2 < delayFalse) {
               // Кнопка была в отжатом состоянии слишком мало времени
               // Скорее всего это была какая то флюктуация дребезга кнопки
               // Возвращаем обратно состояние на первичное нажатие кнопки
               currentButtonStatus = 1;
-
             } else {
               // Кнопка была достаточно долго отжата, чтобы зафиксировать начало второго нажатия
               // Фиксируем
               currentButtonStatus = 3;
               currentButtonStatusStart3 = millis();
             }
-
           } else {
             // Если кнопка все еще отжата
-
             // Проверяем, не достаточно ли она уже отжата, чтобы зафиксировать разовый клик
             if (timeButton - currentButtonStatusStart2 > delayDeltaDoubleClick) {
               // Кнопка в отжатом состоянии слишком долго
@@ -123,9 +97,7 @@ class Button {
               currentButtonStatus = 0;
               event = 1;
             }
-
           }
-
           break;
 
         case 3:
@@ -153,60 +125,27 @@ class Button {
               currentButtonStatus = 0;
             }
           }
-
           break;
-
       }
-
       return event;
     }
 
   private:
     int event = 0;
-    int isPressed = LOW;
+    int isPressed = LOW;                      //Уровень сигнала при котором кнопка считается нажатой
 
-    int buttonPin = A0;                  // Пин с кнопкой
+    int buttonPin;                            // Пин с кнопкой
 
     int currentButtonStatus = 0;              // 0 - Кнопка не нажата
-    // 1 - Кнопка нажата первый раз
-    // 2 - Кнопка отжата после нажатия
-    // 3 - Кнопка нажата во второй раз
+                                              // 1 - Кнопка нажата первый раз
+                                              // 2 - Кнопка отжата после нажатия
+                                              // 3 - Кнопка нажата во второй раз
 
     unsigned long currentButtonStatusStart1;  // Кол-во милисекунд от начала работы программы, когда начался статус 1
     unsigned long currentButtonStatusStart2;  // Кол-во милисекунд от начала работы программы, когда начался статус 2
     unsigned long currentButtonStatusStart3;  // Кол-во милисекунд от начала работы программы, когда начался статус 3
 
-
-
     const int delayFalse = 10;                // Длительность, меньше которой не регистрируется единоразовый клик
     const int delayLongSingleClick = 1000;    // Длительность зажатия кнопки для выхода в режим увеличения громкости
     const int delayDeltaDoubleClick = 100;    // Длительность между кликами, когда будет зафиксирован двойной клик
-};
-
-class Keypad {
-  public:
-    Button* buttons;
-
-    Keypad(int* pins) {
-      count = sizeof(pins) / sizeof(typeof(pins));
-      buttons = new Button[count];
-      for (int i = 0; i < count; i++)
-      {
-        (*(buttons + i)).begin(pins[i]);
-      }
-    }
-
-    void checkButtonStatus() {
-      for (int i = 0; i < count; i++)
-      {
-        (*(buttons + i)).changeButtonStatus();
-      }
-    }
-
-    int getBtnStatus(int i) {
-      return buttons[i].getStatus();
-    }
-
-  private:
-    byte count = 1;
 };

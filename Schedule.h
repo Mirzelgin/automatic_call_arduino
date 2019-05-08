@@ -1,17 +1,4 @@
 #include <RTClib.h>
-#include <time.h>
-
-byte bell[8] =
-{
-  B00000,
-  B00100,
-  B01010,
-  B01010,
-  B01010,
-  B11111,
-  B00100,
-  B00000,
-};
 
 class lesson
 {
@@ -21,7 +8,7 @@ class lesson
     DateTime time_end;
 
     lesson() {
-      active      = true;
+      active      = false;
       time_start  = DateTime(2001, 1, 1, 0, 1);
       time_end    = DateTime(2001, 1, 1, 0, 2);
     }
@@ -50,8 +37,8 @@ class Schedule
     }
 
     void begin() {
-      for (int i = 0; i < maxCount; i++) {
-        schedule[i].active = false;
+      for (int i = 0; i < count; i++) {
+        schedule[i].active = true;
       }
     }
 };

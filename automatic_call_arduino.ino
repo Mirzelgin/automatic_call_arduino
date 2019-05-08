@@ -1,44 +1,67 @@
 #include <RTClib.h>
+//#include <LiquidCrystal.h>
 #include <LiquidCrystal_I2C.h>
 #include <Wire.h>
 #include <EEPROM.h>
-//#include <LiquidCrystal.h>
 
 #include "Button.h"
 #include "Schedule.h"
+
+//=======================================================================
 
 Button bLeftOrDown(A0); //кнопка "влево/вниз"
 Button bRightOrUp(A1);  //кнопка "вправо/вверх"
 Button bOkOrSave(A2);   //кнопка "да/сохранить"
 Button bNoOrExit(A3);   //кнопка "нет/выход"
-unsigned int g = 0;
-const int p = 250;
 
-#define relay A4
-bool relayState = LOW;
-const int timeIsOn = 5000;
-long timeOn = 0;
+const int p = 250;      //интервал срабатывания события при удержании
+unsigned int g = 0;     //время предыдучего срабатывания
+
+//=======================================================================
+
+#define relay A4            //выход на реле
+#define timeIsOn 5000       //время удержания во включенном состоянии
+bool relayState = LOW;      //текущее состояние
+long timeOn = 0;            //время предыдущего включения
+
+//=======================================================================
 
 byte l_m = 0;       //Хранит текущий уровень отображения меню
 byte l_sm_1 = 30; //Используется для выбора различных переменных меню
 bool l_sm_2 = true;  //Используется для настроки одного занятия
 byte sel_s = 0;  //Выбраное расписание
 
+//=======================================================================
+
 //LiquidCrystal lcd(13, 12, 6, 5, 4, 3); //Pins used for RS,E,D4,D5,D6,D7
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 RTC_DS1307 rtc;
+
+//=======================================================================
 
 #define number_of_type 2    //Количество различных типов расписаний
 #define max_lessons 5       //Максимум занятий в расписании
 Schedule s[number_of_type]; //Массив с расписаниями
 
-String days_of_the_week[6] = { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
+//=======================================================================
+String days_of_the_week[7] = { "SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT" };
+byte bell[8] =
+{
+  B00000,
+  B00100,
+  B01010,
+  B01010,
+  B01010,
+  B11111,
+  B00100,
+  B00000,
+};
 
 void setup() {
   Serial.begin(9600);
   rtc.begin();
 
-  //Конфигурируем реле
+  //Конфигурируем выходы реле
   pinMode(relay, OUTPUT);
   digitalWrite(relay, LOW);
 
@@ -50,12 +73,61 @@ void setup() {
 
   //Инициализируем модуль RTC
   if (!rtc.isrunning()) {
-    Serial.println("RTC is NOT running!");
+    Serial.println("RTC is NOT work!");
+
+    while (true) {
+      lcd.setCursor(0, 0);
+      lcd.print("RTC IS NOT WORK!");
+      lcd.setCursor(0, 1);
+      lcd.print("PLEASE REBOOT!");
+    }
   }
 
   //Задаём RTC модулю дату и время компиляции скетча
-  //rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-  rtc.adjust(DateTime(2000, 1, 1));
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  //rtc.adjust(DateTime(2000, 1, 1));
+
+  //=======================================================================
+  //Записывает текущее расписание колледжа, можно удалить
+  /*
+    s[0].count = 4;
+    s[0].begin();
+    s[0].days_of_action[0] = false;
+    //1
+    s[0].schedule[0].time_start = DateTime(2001, 1, 1, 8, 30);
+    s[0].schedule[0].time_end = DateTime(2001, 1, 1, 10, 0);
+    //2
+    s[0].schedule[1].time_start = DateTime(2001, 1, 1, 10, 15);
+    s[0].schedule[1].time_end = DateTime(2001, 1, 1, 11, 45);
+    //3
+    s[0].schedule[2].time_start = DateTime(2001, 1, 1, 12, 25);
+    s[0].schedule[2].time_end = DateTime(2001, 1, 1, 13, 55);
+    //4
+    s[0].schedule[3].time_start = DateTime(2001, 1, 1, 14, 5);
+    s[0].schedule[3].time_end = DateTime(2001, 1, 1, 15, 35);
+
+    s[1].count = 3;
+    s[1].begin();
+    s[1].days_of_action[1] = false;
+    s[1].days_of_action[2] = false;
+    s[1].days_of_action[3] = false;
+    s[1].days_of_action[4] = false;
+    s[1].days_of_action[5] = false;
+    //1
+    s[1].schedule[0].time_start = DateTime(2001, 1, 1, 8, 30);
+    s[1].schedule[0].time_end = DateTime(2001, 1, 1, 10, 0);
+    //2
+    s[1].schedule[1].time_start = DateTime(2001, 1, 1, 10, 15);
+    s[1].schedule[1].time_end = DateTime(2001, 1, 1, 11, 45);
+    //3
+    s[1].schedule[2].time_start = DateTime(2001, 1, 1, 12, 00);
+    s[1].schedule[2].time_end = DateTime(2001, 1, 1, 13, 30);
+
+    for (int i = 0; i < number_of_type; i++) {
+      EEPROM.put(i * sizeof(s[i]) + 1, s[i]);
+    }
+  */
+  //=======================================================================
 }
 
 DateTime prev;
@@ -137,9 +209,7 @@ void loop() {
         if (l_sm_2) {   //Настраиваем время начала занятия
           lcd.setCursor(0, 1);
           lcd.print("start: ");
-          lcd.print(s[sel_s].schedule[l_sm_1].time_start.hour());
-          lcd.print(":");
-          lcd.print(s[sel_s].schedule[l_sm_1].time_start.minute());
+          lcd.print(printTime(s[sel_s].schedule[l_sm_1].time_start));
 
           //Настраиваем часы начала занятия
           //кнопка bLeftOrDown изменяет часы
@@ -169,9 +239,7 @@ void loop() {
         else {   //Настраиваем время конца занятия
           lcd.setCursor(0, 1);
           lcd.print("end:   ");
-          lcd.print(s[sel_s].schedule[l_sm_1].time_end.hour());
-          lcd.print(":");
-          lcd.print(s[sel_s].schedule[l_sm_1].time_end.minute());
+          lcd.print(printTime(s[sel_s].schedule[l_sm_1].time_end));
 
           //Настраиваем часы начала занятия
           //кнопка bLeftOrDown изменяет часы
@@ -278,21 +346,17 @@ void loop() {
         if (compareTime(now, ts) <= 0) {
           if (compareTime(now, ts) == 0) {
             relayOn();
-            Serial.print("on " + printTime(now));
           }
           lcd.print("S #" + String(sn) + '.' + String(i + 1) + ' ');
           lcd.print(printTime(ts));
         } else if (compareTime(now, te) <= 0) {
           if (compareTime(now, te) == 0) {
             relayOn();
-            Serial.print("on " + printTime(now));
           }
           lcd.print("E #" + String(sn) + '.' + String(i + 1) + ' ');
           lcd.print(printTime(te));
-        } else {
-          if (i < s[sn].count - 1) i++;
-          lcd.print("Not now!");
-        }
+        } else if (i < s[sn].count - 1) i++;
+        else lcd.print("Not now!");
       }
 
       /**************************************************/
@@ -316,16 +380,23 @@ void relayOn() {
 }
 
 int compareTime(DateTime a, DateTime b) {
-  long as = ((a.hour() * 60) + a.minute()) * 60 + a.second();
-  long bs = ((b.hour() * 60) + b.minute()) * 60 + b.second();
+  unsigned int as, bs;
 
-  if (as < bs) return -1;
+  as = ((a.hour() * 60) + a.minute()) * 60 + a.second();
+  bs = ((b.hour() * 60) + b.minute()) * 60 + b.second();
+
+  if (as > bs) return 1;
   else if (as == bs) return 0;
-  else return 1;
+  else return -1;
 }
 
 String printTime(DateTime t) {
-  return String(t.hour()) + ':' + String(t.minute()) + ':' + String(t.second());
+  String st = "";
+  if (t.hour() < 10) st = st + "0";
+  st = st + String(t.hour()) + ':';
+  if (t.minute() < 10) st = st + "0";
+  st = st + String(t.minute());
+  return st;
 }
 
 void toString(Schedule sch) {
