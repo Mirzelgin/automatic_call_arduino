@@ -6,7 +6,6 @@
 
 #include "Button.h"
 #include "Schedule.h"
-using namespace tools;
 
 Button bLeftOrDown(A0); //кнопка "влево/вниз"
 Button bRightOrUp(A1);  //кнопка "вправо/вверх"
@@ -33,12 +32,11 @@ RTC_DS1307 rtc;
 #define max_lessons 5       //Максимум занятий в расписании
 Schedule s[number_of_type]; //Массив с расписаниями
 
+String days_of_the_week[6] = { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
+
 void setup() {
   Serial.begin(9600);
   rtc.begin();
-
-  //Serial.println("Инициализация часов реального времени...");
-  Serial.println(rtc.isrunning());
 
   //Конфигурируем реле
   pinMode(relay, OUTPUT);
@@ -261,7 +259,6 @@ void loop() {
         lcd.setCursor(0, 1);
 
         int sn = 0;
-        DateTime ts, te;
 
         /**************************************************/
         /******Определяем какое расписание действует*******/
@@ -275,8 +272,8 @@ void loop() {
           break;
         }
 
-        ts = s[sn].schedule[i].time_start;
-        te = s[sn].schedule[i].time_end;
+        DateTime ts = s[sn].schedule[i].time_start;
+        DateTime te = s[sn].schedule[i].time_end;
 
         if (compareTime(now, ts) <= 0) {
           if (compareTime(now, ts) == 0) {

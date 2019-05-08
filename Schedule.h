@@ -1,11 +1,7 @@
 #include <RTClib.h>
 #include <time.h>
 
-
-namespace tools {
-char* days_of_the_week[] { "SAT", "MON", "TUE", "WED", "THU", "FRI" };
-
-byte bell[8] = 
+byte bell[8] =
 {
   B00000,
   B00100,
@@ -24,12 +20,12 @@ class lesson
     DateTime time_start;
     DateTime time_end;
 
-    lesson(){
+    lesson() {
       active      = true;
       time_start  = DateTime(2001, 1, 1, 0, 1);
       time_end    = DateTime(2001, 1, 1, 0, 2);
     }
-    
+
     String toString() {
       String str = "";
       str = str + "active: " + String(active) + "\n";
@@ -48,31 +44,14 @@ class Schedule
     lesson schedule[maxCount];
 
     Schedule() {
-      for (int i = 0; i < 6; i++){
+      for (int i = 0; i < 6; i++) {
         days_of_action[i] = true;
       }
     }
 
     void begin() {
-      for (int i = 0; i < maxCount; i++){
+      for (int i = 0; i < maxCount; i++) {
         schedule[i].active = false;
       }
     }
-
-    String toString() {
-      String str = "*****************\n";
-      str = str + "days_of_action" + "\n";
-      for (int i = 0; i < 6; i++) {
-        str = str + ' ' + String(days_of_action[i]);
-      }
-      for (int i = 0; i < count; i++) {
-        str = str + "\n" + "schedule[" + String(i) + "]\n";
-        str = str + "active: " + String(schedule[i].active) + "\n";
-        str = str + "time_start: " + String(schedule[i].time_start.hour()) + ':' + String(schedule[i].time_start.minute()) + "\n";
-        str = str + "time_end: " + String(schedule[i].time_end.hour()) + ':' + String(schedule[i].time_end.minute()) + "\n";
-      }
-      str = str + "*****************";
-      return str;
-    }
 };
-}
